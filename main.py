@@ -2,6 +2,11 @@ import logging
 import asyncio
 from datetime import datetime, timedelta
 import random
+import os
+
+# Webhook uchun yangi importlar
+from aiohttp import web # HTTP server yaratish uchun
+from aiogram.types import Update # Telegramdan keladigan update turi
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.enums import ParseMode
@@ -35,11 +40,6 @@ dp = Dispatcher(storage=storage)
 
 # Foydalanuvchi holatlari (FSM)
 class UserState(types.states.StatesGroup):
-    """
-    Foydalanuvchi holatlari:
-    - waiting_for_word_request: So'z olishni kutmoqda
-    - in_test: Test jarayonida
-    """
     waiting_for_word_request = types.states.State()
     in_test = types.states.State()
 
@@ -304,10 +304,85 @@ async def main() -> None:
         await close_db_pool() # Bot to'xtaganda ma'lumotlar bazasi ulanishini yopish
         await redis.close() # Redis ulanishini yopish
         logger.info("Bot to'xtatildi.")
+async def on_startup(dispatcher: Dispatcher, bot_obj: Bot, webhook_url: str):
+    """
+    Bot ishga tushganda bajariladigan funksiya.
+    Webhookni o'rnatadi.
+    """
+    logger.info("Bot ishga tushirilmoqda (Webhook)...")
+    await init_db_pool() # Ma'lumotlar bazasi ulanishini ishga tushirish
+    await create_tables() # Jadvallarni yaratish (agar mavjud bo'lmasa)
+
+    # Agar lug'atda so'zlar bo'lmasa, namunaviy so'zlarni qo'shish
+    words_count = await get_total_words_count()
+    if words_count < WORDS_PER_DAY * 2:
+        logger.info("Lug'atda yetarli so'zlar yo'q, namunaviy so'zlar qo'shilmoqda...")
+        await add_sample_words()
+
+    await bot_obj.set_webhook(webhook_url)
+    logger.info(f"Webhook o'rnatildi: {webhook_url}")
+
+async def on_shutdown(dispatcher: Dispatcher, bot_obj: Bot):
+    """
+    Bot to'xtaganda bajariladigan funksiya.
+    Webhookni o'chiradi va DB ulanishini yopadi.
+    """
+    logger.info("Bot to'xtatilmoqda (Webhook)...")
+    await bot_obj.delete_webhook()
+    await close_db_pool()
+    await redis.close()
+    logger.info("Webhook o'chirildi va resurslar yopildi.")
+
+async def webhook_handler(request: web.Request):
+    """
+    Telegramdan kelgan Webhook so'rovlarini qayta ishlaydi.
+    """
+    if request.match_info.get('token') == BOT_TOKEN:
+        update = Update.model_validate(await request.json(), context={"bot": bot})
+        await dp.feed_update(bot, update)
+        return web.Response()
+    else:
+        raise web.HTTPUnauthorized()
+
+async def main_webhook():
+    """
+    Webhook rejimida botni ishga tushirish uchun asosiy funksiya.
+    """
+    # Render.com tomonidan berilgan PORT va URL'ni olish
+    # Render avtomatik ravishda $PORT ni beradi
+    WEB_SERVER_HOST = '0.0.0.0'
+    WEB_SERVER_PORT = os.getenv("PORT") # Render tomonidan beriladi
+    WEBHOOK_PATH = f'/webhook/{BOT_TOKEN}' # Har xil botlar uchun noyob yo'l
+    WEBHOOK_URL = os.getenv("RENDER_EXTERNAL_HOSTNAME") # Render.com domen nomini beradi
+
+    if not WEBHOOK_URL:
+        # Lokal test uchun yoki boshqa holatda
+        WEBHOOK_URL = "http://localhost" # Test uchun Placeholder
+        logger.warning("RENDER_EXTERNAL_HOSTNAME topilmadi, lokal URL ishlatilmoqda.")
+
+    WEBHOOK_URL = f"https://{WEBHOOK_URL}{WEBHOOK_PATH}" if "https" not in WEBHOOK_URL else f"{WEBHOOK_URL}{WEBHOOK_PATH}"
+
+    # Botni ishga tushganda va to'xtaganda chaqiriladigan funksiyalarni ro'yxatdan o'tkazish
+    dp.startup.register(lambda: on_startup(dp, bot, WEBHOOK_URL))
+    dp.shutdown.register(lambda: on_shutdown(dp, bot))
+
+    app = web.Application()
+    app.router.add_post(WEBHOOK_PATH, webhook_handler)
+
+    # Webhook serverini ishga tushirish
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, WEB_SERVER_HOST, WEB_SERVER_PORT)
+    await site.start()
+    logger.info(f"Webhook server {WEB_SERVER_HOST}:{WEB_SERVER_PORT} da ishga tushdi.")
+
+    # Server doimiy ishlashi uchun cheksiz tsikl
+    await asyncio.Event().wait()
+
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        asyncio.run(main_webhook()) # Asosiy funksiyani o'zgartirdik
     except KeyboardInterrupt:
         logger.info("Bot qo'lda to'xtatildi.")
     except Exception as e:
