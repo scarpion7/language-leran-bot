@@ -15,6 +15,7 @@ from aiogram.utils.markdown import hbold
 from aiogram.client.default import DefaultBotProperties
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from config import BOT_TOKEN, REDIS_URL, WORDS_PER_DAY, PASS_PERCENTAGE, TEST_OPTIONS_COUNT
+from aiogram.fsm.state import StatesGroup
 from database import (
     init_db_pool, close_db_pool, create_tables, add_sample_words,
     get_or_create_user, get_words_for_user, get_user_test_words,
@@ -37,10 +38,14 @@ storage = RedisStorage(redis=redis)
 dp = Dispatcher(storage=storage)
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 # Foydalanuvchi holatlari (FSM)
-class UserState(types.states.StatesGroup):
-    waiting_for_word_request = types.states.State()
-    in_test = types.states.State()
-
+class UserState(StatesGroup): # <-- BU QATORDA types.states. NI OLIB TASHLASH KERAK
+    """
+    Foydalanuvchi holatlari:
+    - waiting_for_word_request: So'z olishni kutmoqda
+    - in_test: Test jarayonida
+    """
+    waiting_for_word_request = types.State() # Bu yerda types.State to'g'ri
+    in_test = types.State(
 
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message, state: FSMContext) -> None:
