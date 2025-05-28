@@ -4,3 +4,5 @@ redis==6.1.0
 python-dotenv==1.1.0
 gTTS==2.5.4
 asyncio==3.4.3 # Python 3.12+ uchun
+aiohttp # Yangi qo'shilgan
+uvicorn
