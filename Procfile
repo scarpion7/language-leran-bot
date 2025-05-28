@@ -1,1 +1,1 @@
-web: python -m gunicorn main:app --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+web: python -m uvicorn main:main_webhook --host 0.0.0.0 --port $PORT
