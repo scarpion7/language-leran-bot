@@ -353,7 +353,7 @@ async def main_webhook():
     WEB_SERVER_HOST = '0.0.0.0'
     WEB_SERVER_PORT = os.getenv("PORT") # Render tomonidan beriladi
     WEBHOOK_PATH = f'/webhook/{BOT_TOKEN}' # Har xil botlar uchun noyob yo'l
-    WEBHOOK_URL = os.getenv("RENDER_EXTERNAL_HOSTNAME") # Render.com domen nomini beradi
+    WEBHOOK_URL = os.getenv("WEBHOOK_URL") # Render.com domen nomini beradi
 
     if not WEBHOOK_URL:
         # Lokal test uchun yoki boshqa holatda
