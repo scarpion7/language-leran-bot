@@ -45,7 +45,7 @@ class UserState(StatesGroup): # <-- BU QATORDA types.states. NI OLIB TASHLASH KE
     - in_test: Test jarayonida
     """
     waiting_for_word_request = types.State() # Bu yerda types.State to'g'ri
-    in_test = types.State(
+    in_test = types.State()
 
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message, state: FSMContext) -> None:
