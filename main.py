@@ -38,13 +38,13 @@ storage = RedisStorage(redis=redis)
 dp = Dispatcher(storage=storage)
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 # Foydalanuvchi holatlari (FSM)
-class UserState(StatesGroup): # <-- BU QATORDA types.states. NI OLIB TASHLASH KERAK
+class UserState(StatesGroup):
     """
     Foydalanuvchi holatlari:
     - waiting_for_word_request: So'z olishni kutmoqda
     - in_test: Test jarayonida
     """
-    waiting_for_word_request = types.State() # Bu yerda types.State to'g'ri
+    waiting_for_word_request = types.State() 
     in_test = types.State()
 
 @dp.message(CommandStart())
