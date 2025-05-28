@@ -44,8 +44,8 @@ class UserState(StatesGroup):
     - waiting_for_word_request: So'z olishni kutmoqda
     - in_test: Test jarayonida
     """
-    waiting_for_word_request = types.State() 
-    in_test = types.State()
+    waiting_for_word_request =State() 
+    in_test = State()
 
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message, state: FSMContext) -> None:
