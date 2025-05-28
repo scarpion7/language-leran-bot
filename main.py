@@ -3,19 +3,17 @@ import asyncio
 from datetime import datetime, timedelta
 import random
 import os
-
 # Webhook uchun yangi importlar
 from aiohttp import web # HTTP server yaratish uchun
 from aiogram.types import Update # Telegramdan keladigan update turi
-
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.redis import RedisStorage, Redis
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import CommandStart, Command
 from aiogram.utils.markdown import hbold
+from aiogram.client.default import DefaultBotProperties
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
 from config import BOT_TOKEN, REDIS_URL, WORDS_PER_DAY, PASS_PERCENTAGE, TEST_OPTIONS_COUNT
 from database import (
     init_db_pool, close_db_pool, create_tables, add_sample_words,
@@ -35,9 +33,9 @@ redis = Redis.from_url(REDIS_URL)
 storage = RedisStorage(redis=redis)
 
 # Bot va Dispatcher obyektlari
-bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
-dp = Dispatcher(storage=storage)
 
+dp = Dispatcher(storage=storage)
+bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 # Foydalanuvchi holatlari (FSM)
 class UserState(types.states.StatesGroup):
     waiting_for_word_request = types.states.State()
