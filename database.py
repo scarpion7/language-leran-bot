@@ -241,7 +241,7 @@ async def update_user_word_progress(user_id: int, word_id: int, is_correct: bool
                     last_attempt_date = $1
                 WHERE user_id = $2 AND word_id = $3;
             ''', datetime.now(), user_id, word_id)
-        logger.info(f"Foydalanuvchi {user_id}, so'z {word_id}: javob {"to\'g\'ri" if is_correct else "noto\'g\'ri"}")
+        logger.info(f"Foydalanuvchi {user_id}, so'z {word_id}: javob {'correct' if is_correct else 'incorrect'}")
 
 async def get_user_test_words(user_id: int):
     """
